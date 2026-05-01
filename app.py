@@ -3,6 +3,7 @@ import random
 
 st.set_page_config(page_title="Car Racing Game", layout="centered")
 
+# Initialize state
 if "started" not in st.session_state:
     st.session_state.started = False
     st.session_state.player_lane = 1
@@ -14,6 +15,7 @@ if "started" not in st.session_state:
 
 st.title("🚗 Car Racing Game")
 
+# Functions
 def restart():
     st.session_state.started = True
     st.session_state.player_lane = 1
@@ -28,6 +30,7 @@ def move_left():
 def move_right():
     st.session_state.player_lane = min(2, st.session_state.player_lane + 1)
 
+# Buttons
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -39,7 +42,9 @@ with col2:
 with col3:
     st.button("Right ➡️", on_click=move_right)
 
+# Game Logic
 if st.session_state.started and not st.session_state.game_over:
+
     st.session_state.enemy_row += 1
 
     if st.session_state.enemy_row > 5:
@@ -47,6 +52,7 @@ if st.session_state.started and not st.session_state.game_over:
         st.session_state.enemy_lane = random.randint(0, 2)
         st.session_state.score += 1
 
+    # Collision check
     if (
         st.session_state.enemy_row == 5
         and st.session_state.enemy_lane == st.session_state.player_lane
@@ -57,6 +63,7 @@ if st.session_state.started and not st.session_state.game_over:
             st.session_state.score
         )
 
+    # Build road
     road = ""
 
     for row in range(6):
@@ -73,15 +80,16 @@ if st.session_state.started and not st.session_state.game_over:
 
             road += f"""
             <div style='
-                width:75px;
+                width:80px;
                 height:55px;
-                font-size:34px;
+                font-size:35px;
                 text-align:center;
             '>{item}</div>
             """
 
         road += "</div>"
 
+    # Render game
     st.markdown(
         f"""
         <div style="
@@ -99,9 +107,11 @@ if st.session_state.started and not st.session_state.game_over:
         unsafe_allow_html=True
     )
 
+    # Next frame button
     st.button("Next Frame ▶️")
 
 elif st.session_state.game_over:
-    st.error("Game Over! Press Start / Restart.")
+    st.error("💥 Game Over! Press Start / Restart")
 
+# High score
 st.write(f"🏆 High Score: {st.session_state.high_score}")
