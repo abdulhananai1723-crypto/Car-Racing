@@ -4,55 +4,75 @@ import time
 
 st.set_page_config(page_title="Car Racing Game", layout="centered")
 
-# Session state
+if "score" not in st.session_state:
+    st.session_state.score = 0
+if "high_score" not in st.session_state:
+    st.session_state.high_score = 0
+if "player_lane" not in st.session_state:
+    st.session_state.player_lane = 1
 if "game_running" not in st.session_state:
     st.session_state.game_running = False
-    st.session_state.score = 0
-    st.session_state.high_score = 0
 
 st.title("🚗 Car Racing Game")
 
-# Start Button
-if st.button("Start Game", key="start_btn"):
-    st.session_state.game_running = True
-    st.session_state.score = 0
+col1, col2, col3 = st.columns(3)
 
-# Restart Button
-if st.button("Restart Game", key="restart_btn"):
-    st.session_state.score = 0
-    st.session_state.game_running = True
+with col1:
+    if st.button("⬅️ Left"):
+        st.session_state.player_lane = max(0, st.session_state.player_lane - 1)
 
-# Game logic simulation
+with col2:
+    if st.button("Start / Restart"):
+        st.session_state.game_running = True
+        st.session_state.score = 0
+
+with col3:
+    if st.button("Right ➡️"):
+        st.session_state.player_lane = min(2, st.session_state.player_lane + 1)
+
+game_area = st.empty()
+
 if st.session_state.game_running:
-    game_area = st.empty()
+    obstacle_lane = random.randint(0, 2)
 
-    for i in range(100):
-        st.session_state.score += 1
-        speed = 0.05 - min(st.session_state.score * 0.0002, 0.04)
+    st.session_state.score += 1
 
-        game_area.markdown(
-            f"""
-            <div style="
-                background-color:#222;
-                height:300px;
-                border-radius:10px;
-                color:white;
-                display:flex;
-                align-items:center;
-                justify-content:center;
-                font-size:20px;">
-                🚗 Avoid Cars! Score: {st.session_state.score}
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+    road = ""
+    for row in range(6):
+        road += "<div style='display:flex; justify-content:center;'>"
+        for lane in range(3):
+            car = "⬛"
+            if row == 1 and lane == obstacle_lane:
+                car = "🚙"
+            if row == 5 and lane == st.session_state.player_lane:
+                car = "🚗"
+            road += f"<div style='font-size:35px; width:70px; text-align:center;'>{car}</div>"
+        road += "</div>"
 
-        time.sleep(speed)
+    game_area.markdown(
+        f"""
+        <div style="
+            background:#222;
+            padding:20px;
+            border-radius:12px;
+            color:white;
+            text-align:center;
+        ">
+            {road}
+            <h3>Score: {st.session_state.score}</h3>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-    st.session_state.game_running = False
-    st.success(f"Game Over! Score: {st.session_state.score}")
+    if obstacle_lane == st.session_state.player_lane and st.session_state.score > 2:
+        st.session_state.game_running = False
+        st.error(f"Game Over! Score: {st.session_state.score}")
 
-    if st.session_state.score > st.session_state.high_score:
-        st.session_state.high_score = st.session_state.score
+        if st.session_state.score > st.session_state.high_score:
+            st.session_state.high_score = st.session_state.score
+    else:
+        time.sleep(0.4)
+        st.rerun()
 
 st.write(f"🏆 High Score: {st.session_state.high_score}")
