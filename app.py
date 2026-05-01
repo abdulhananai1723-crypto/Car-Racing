@@ -3,6 +3,7 @@ import random
 
 st.set_page_config(page_title="Car Racing Game", layout="centered")
 
+# Initialize session
 if "started" not in st.session_state:
     st.session_state.started = False
     st.session_state.player_lane = 1
@@ -14,6 +15,7 @@ if "started" not in st.session_state:
 
 st.title("🚗 Car Racing Game")
 
+# Functions
 def restart():
     st.session_state.started = True
     st.session_state.player_lane = 1
@@ -28,18 +30,21 @@ def move_left():
 def move_right():
     st.session_state.player_lane = min(2, st.session_state.player_lane + 1)
 
-c1, c2, c3 = st.columns(3)
+# Buttons
+col1, col2, col3 = st.columns(3)
 
-with c1:
+with col1:
     st.button("⬅️ Left", on_click=move_left)
 
-with c2:
+with col2:
     st.button("Start / Restart", on_click=restart)
 
-with c3:
+with col3:
     st.button("Right ➡️", on_click=move_right)
 
+# Game
 if st.session_state.started and not st.session_state.game_over:
+
     st.session_state.enemy_row += 1
 
     if st.session_state.enemy_row > 5:
@@ -47,6 +52,7 @@ if st.session_state.started and not st.session_state.game_over:
         st.session_state.enemy_lane = random.randint(0, 2)
         st.session_state.score += 1
 
+    # Collision
     if (
         st.session_state.enemy_row == 5
         and st.session_state.enemy_lane == st.session_state.player_lane
@@ -57,6 +63,7 @@ if st.session_state.started and not st.session_state.game_over:
             st.session_state.score
         )
 
+    # Build road (FIXED)
     road = "<table style='margin:auto;'>"
 
     for row in range(6):
@@ -71,14 +78,7 @@ if st.session_state.started and not st.session_state.game_over:
             if row == 5 and lane == st.session_state.player_lane:
                 item = "🚗"
 
-            road += f"""
-            <td style="
-                width:70px;
-                height:55px;
-                text-align:center;
-                font-size:34px;
-            ">{item}</td>
-            """
+            road += f"<td style='width:70px;height:55px;text-align:center;font-size:34px;'>{item}</td>"
 
         road += "</tr>"
 
@@ -86,7 +86,7 @@ if st.session_state.started and not st.session_state.game_over:
 
     html = f"""
     <div style="
-        background-color:#222;
+        background:#222;
         padding:25px;
         border-radius:12px;
         width:330px;
