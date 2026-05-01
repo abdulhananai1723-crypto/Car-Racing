@@ -1,108 +1,249 @@
 import streamlit as st
-import random
+import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Car Racing Game", layout="centered")
 
-# Initialize session
-if "started" not in st.session_state:
-    st.session_state.started = False
-    st.session_state.player_lane = 1
-    st.session_state.enemy_lane = random.randint(0, 2)
-    st.session_state.enemy_row = 0
-    st.session_state.score = 0
-    st.session_state.high_score = 0
-    st.session_state.game_over = False
-
 st.title("🚗 Car Racing Game")
 
-# Functions
-def restart():
-    st.session_state.started = True
-    st.session_state.player_lane = 1
-    st.session_state.enemy_lane = random.randint(0, 2)
-    st.session_state.enemy_row = 0
-    st.session_state.score = 0
-    st.session_state.game_over = False
+game_code = """
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+    body {
+        margin: 0;
+        background: transparent;
+        text-align: center;
+        font-family: Arial, sans-serif;
+    }
 
-def move_left():
-    st.session_state.player_lane = max(0, st.session_state.player_lane - 1)
+    canvas {
+        background: #1e1e1e;
+        border-radius: 15px;
+        border: 5px solid #444;
+    }
 
-def move_right():
-    st.session_state.player_lane = min(2, st.session_state.player_lane + 1)
+    button {
+        margin: 10px;
+        padding: 10px 25px;
+        font-size: 16px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        background: #ff4757;
+        color: white;
+        font-weight: bold;
+    }
 
-# Buttons
-col1, col2, col3 = st.columns(3)
+    .info {
+        color: #222;
+        font-size: 18px;
+        margin-bottom: 10px;
+    }
+</style>
+</head>
 
-with col1:
-    st.button("⬅️ Left", on_click=move_left)
+<body>
 
-with col2:
-    st.button("Start / Restart", on_click=restart)
+<div class="info">
+    Press <b>A</b> to move left | Press <b>D</b> to move right
+</div>
 
-with col3:
-    st.button("Right ➡️", on_click=move_right)
+<button onclick="startGame()">Start / Restart</button>
 
-# Game
-if st.session_state.started and not st.session_state.game_over:
+<br>
 
-    st.session_state.enemy_row += 1
+<canvas id="gameCanvas" width="400" height="600"></canvas>
 
-    if st.session_state.enemy_row > 5:
-        st.session_state.enemy_row = 0
-        st.session_state.enemy_lane = random.randint(0, 2)
-        st.session_state.score += 1
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
 
-    # Collision
-    if (
-        st.session_state.enemy_row == 5
-        and st.session_state.enemy_lane == st.session_state.player_lane
-    ):
-        st.session_state.game_over = True
-        st.session_state.high_score = max(
-            st.session_state.high_score,
-            st.session_state.score
-        )
+let roadX = 70;
+let roadWidth = 260;
+let laneWidth = roadWidth / 3;
 
-    # Build road (FIXED)
-    road = "<table style='margin:auto;'>"
+let player = {
+    lane: 1,
+    y: 500,
+    width: 55,
+    height: 90
+};
 
-    for row in range(6):
-        road += "<tr>"
+let enemy = {
+    lane: Math.floor(Math.random() * 3),
+    y: -120,
+    width: 55,
+    height: 90,
+    speed: 5
+};
 
-        for lane in range(3):
-            item = "⬛"
+let score = 0;
+let highScore = 0;
+let gameRunning = false;
+let animationId;
+let roadLineY = 0;
 
-            if row == st.session_state.enemy_row and lane == st.session_state.enemy_lane:
-                item = "🚙"
+function laneCenter(lane) {
+    return roadX + laneWidth * lane + laneWidth / 2;
+}
 
-            if row == 5 and lane == st.session_state.player_lane:
-                item = "🚗"
+function drawCar(x, y, color) {
+    ctx.fillStyle = color;
+    ctx.fillRect(x - 25, y, 50, 80);
 
-            road += f"<td style='width:70px;height:55px;text-align:center;font-size:34px;'>{item}</td>"
+    ctx.fillStyle = "#111";
+    ctx.fillRect(x - 18, y + 10, 36, 18);
 
-        road += "</tr>"
+    ctx.fillStyle = "#87ceeb";
+    ctx.fillRect(x - 15, y + 35, 30, 18);
 
-    road += "</table>"
+    ctx.fillStyle = "black";
+    ctx.fillRect(x - 32, y + 12, 10, 20);
+    ctx.fillRect(x + 22, y + 12, 10, 20);
+    ctx.fillRect(x - 32, y + 52, 10, 20);
+    ctx.fillRect(x + 22, y + 52, 10, 20);
 
-    html = f"""
-    <div style="
-        background:#222;
-        padding:25px;
-        border-radius:12px;
-        width:330px;
-        margin:auto;
-        color:white;
-    ">
-        {road}
-        <h2 style="text-align:center;">Score: {st.session_state.score}</h2>
-    </div>
-    """
+    ctx.fillStyle = "yellow";
+    ctx.fillRect(x - 18, y + 72, 10, 6);
+    ctx.fillRect(x + 8, y + 72, 10, 6);
+}
 
-    st.markdown(html, unsafe_allow_html=True)
+function drawRoad() {
+    ctx.fillStyle = "#2c2c2c";
+    ctx.fillRect(roadX, 0, roadWidth, canvas.height);
 
-    st.button("Next Frame ▶️")
+    ctx.fillStyle = "#00aa00";
+    ctx.fillRect(0, 0, roadX, canvas.height);
+    ctx.fillRect(roadX + roadWidth, 0, roadX, canvas.height);
 
-elif st.session_state.game_over:
-    st.error("💥 Game Over! Press Start / Restart")
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 4;
 
-st.write(f"🏆 High Score: {st.session_state.high_score}")
+    ctx.beginPath();
+    ctx.moveTo(roadX, 0);
+    ctx.lineTo(roadX, canvas.height);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(roadX + roadWidth, 0);
+    ctx.lineTo(roadX + roadWidth, canvas.height);
+    ctx.stroke();
+
+    ctx.setLineDash([30, 25]);
+    ctx.lineDashOffset = -roadLineY;
+    ctx.strokeStyle = "#f1f1f1";
+
+    ctx.beginPath();
+    ctx.moveTo(roadX + laneWidth, 0);
+    ctx.lineTo(roadX + laneWidth, canvas.height);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(roadX + laneWidth * 2, 0);
+    ctx.lineTo(roadX + laneWidth * 2, canvas.height);
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+}
+
+function drawText() {
+    ctx.fillStyle = "white";
+    ctx.font = "22px Arial";
+    ctx.fillText("Score: " + score, 15, 35);
+    ctx.fillText("High: " + highScore, 285, 35);
+}
+
+function collision() {
+    let playerX = laneCenter(player.lane);
+    let enemyX = laneCenter(enemy.lane);
+
+    return (
+        Math.abs(playerX - enemyX) < 45 &&
+        enemy.y + enemy.height > player.y &&
+        enemy.y < player.y + player.height
+    );
+}
+
+function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    roadLineY += enemy.speed;
+    if (roadLineY > 55) roadLineY = 0;
+
+    drawRoad();
+
+    enemy.y += enemy.speed;
+
+    if (enemy.y > canvas.height) {
+        enemy.y = -120;
+        enemy.lane = Math.floor(Math.random() * 3);
+        score++;
+
+        if (score % 5 === 0) {
+            enemy.speed += 0.7;
+        }
+    }
+
+    drawCar(laneCenter(enemy.lane), enemy.y, "#ff3838");
+    drawCar(laneCenter(player.lane), player.y, "#1e90ff");
+    drawText();
+
+    if (collision()) {
+        gameRunning = false;
+        highScore = Math.max(highScore, score);
+
+        ctx.fillStyle = "rgba(0,0,0,0.7)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "white";
+        ctx.font = "38px Arial";
+        ctx.fillText("GAME OVER", 95, 270);
+
+        ctx.font = "22px Arial";
+        ctx.fillText("Score: " + score, 155, 315);
+        ctx.fillText("Press Start to Restart", 95, 360);
+
+        return;
+    }
+
+    if (gameRunning) {
+        animationId = requestAnimationFrame(gameLoop);
+    }
+}
+
+function startGame() {
+    cancelAnimationFrame(animationId);
+
+    player.lane = 1;
+    enemy.lane = Math.floor(Math.random() * 3);
+    enemy.y = -120;
+    enemy.speed = 5;
+    score = 0;
+    gameRunning = true;
+
+    gameLoop();
+}
+
+document.addEventListener("keydown", function(event) {
+    if (!gameRunning) return;
+
+    if (event.key === "a" || event.key === "A") {
+        player.lane = Math.max(0, player.lane - 1);
+    }
+
+    if (event.key === "d" || event.key === "D") {
+        player.lane = Math.min(2, player.lane + 1);
+    }
+});
+
+drawRoad();
+drawCar(laneCenter(player.lane), player.y, "#1e90ff");
+drawText();
+</script>
+
+</body>
+</html>
+"""
+
+components.html(game_code, height=720)
